@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Ultimate JS Engine Visualizer</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --accent: #58a6ff;
+            --success: #3fb950;
+            --timer: #d29922;
+            --micro: #bc8cff;
+            --macro: #f78166;
+            --keyword: #ff7b72;
+            --func: #d2a8ff;
+            --str: #a5d6ff;
+            --comment: #8b949e;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Fira Code', 'Consolas', monospace;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            padding: 15px 30px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #21262d;
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary { background: var(--success); border: none; color: white; }
+        .btn-stop { background: var(--keyword); border: none; color: white; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        main { display: flex; flex: 1; overflow: hidden; }
+
+        /* Wide Code Panel */
+        #code-panel {
+            flex: 2.3;
+            padding: 25px;
+            background: #090c10;
+            overflow-y: auto;
+            border-right: 1px solid var(--border);
+            font-size: 13.5px;
+            line-height: 1.5;
+        }
+
+        .line { display: block; border-left: 4px solid transparent; padding-left: 15px; white-space: pre; }
+        .line.active { background: rgba(88, 166, 255, 0.1); border-left-color: var(--accent); }
+
+        /* Narrow Ladder Panel */
+        #ladder-panel {
+            flex: 0.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 5px;
+            background: #0d1117;
+            border-right: 1px solid var(--border);
+        }
+
+        .node {
+            width: 90%;
+            padding: 10px 5px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 10px;
+            transition: 0.4s;
+            margin: 4px 0;
+        }
+        .node.active { border-color: var(--timer); box-shadow: 0 0 10px var(--timer); }
+        .node.done { border-color: var(--success); background: rgba(63, 185, 80, 0.1); }
+
+        .link { width: 3px; height: 18px; background: var(--border); }
+        .link.active { background: var(--success); }
+
+        /* Internals Panel */
+        #internals-panel { flex: 1.4; display: flex; flex-direction: column; }
+        .sec { flex: 1; padding: 10px 12px; border-bottom: 1px solid var(--border); overflow-y: auto; }
+        .title { font-size: 10px; font-weight: bold; color: var(--comment); text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .sublabel { font-size: 9px; color: var(--comment); font-weight: normal; text-transform: none; }
+
+        #terminal { height: 130px; background: #000; color: #fff; padding: 15px; font-family: monospace; overflow-y: auto; border-top: 2px solid var(--accent); }
+        .term-line { margin-bottom: 5px; color: #00ff00; }
+
+        .chip { padding: 6px 10px; margin-bottom: 6px; border-radius: 4px; font-size: 12px; animation: slide 0.3s ease; transition: opacity 0.4s ease; }
+        .chip-stack { background: var(--accent); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .chip-api { background: var(--timer); color: black; font-weight: bold; }
+        .chip-macro { background: var(--macro); color: black; font-weight: bold; }
+        .chip-micro { background: var(--micro); color: white; }
+
+        @keyframes slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Syntax Colors */
+        .k { color: var(--keyword); } .f { color: var(--func); } .s { color: var(--str); } .c { color: var(--comment); }
+
+        #step-msg {
+            padding: 10px 30px;
+            background: #0d1117;
+            border-bottom: 1px solid var(--border);
+            font-size: 12.5px;
+            color: var(--accent);
+            min-height: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div><strong>JS Engine Deep-Dive: Callstack, Macrotasks &amp; Microtasks</strong></div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn" id="nextBtn" onclick="nextStep()">Next Step</button>
+        <button class="btn btn-primary" id="autoBtn" onclick="autoRun()">Auto-Pilot</button>
+        <button class="btn btn-stop" id="stopBtn" onclick="stopAuto()" disabled>Stop</button>
+        <button class="btn" onclick="location.reload()" style="color: var(--keyword)">Reset</button>
+    </div>
+</header>
+
+<div id="step-msg"></div>
+
+<main>
+    <div id="code-panel">
+<div class="line" id="l1"><span class="k">const</span> <span class="f">getUser</span> = id => <span class="k">new</span> Promise(resolve => {</div>
+<div class="line" id="l2">  <span class="k">const</span> greeting = <span class="s">"Welcome back,"</span>;</div>
+<div class="line" id="l3">  <span class="k">const</span> <span class="f">fetchUserName</span> = cb => <span class="f">setTimeout</span>(() => cb(<span class="s">"Alice"</span>), 1000);</div>
+<div class="line" id="l4"></div>
+<div class="line" id="l5">  <span class="f">fetchUserName</span>(name => {</div>
+<div class="line" id="l6">    <span class="f">console.log</span>(greeting + <span class="s">" "</span> + name); <span class="c">// Closure Recitation</span></div>
+<div class="line" id="l7">  });</div>
+<div class="line" id="l8"></div>
+<div class="line" id="l9">  <span class="f">console.log</span>(<span class="s">"Request sent, waiting for response..."</span>);</div>
+<div class="line" id="l10">  <span class="f">setTimeout</span>(() => resolve({id, name: <span class="s">'Alice'</span>}), 1500);</div>
+<div class="line" id="l11">});</div>
+<div class="line" id="l12"></div>
+<div class="line" id="l13"><span class="k">const</span> <span class="f">getPosts</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{id: 101}]), 1000));</div>
+<div class="line" id="l14"><span class="k">const</span> <span class="f">getComments</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{text: <span class="s">'Comment A'</span>}]), 1000));</div>
+<div class="line" id="l15"></div>
+<div class="line" id="l16"><span class="c">// --- The Registration Phase ---</span></div>
+<div class="line" id="l17"><span class="f">getUser</span>(1)</div>
+<div class="line" id="l18">  .<span class="f">then</span>(user => <span class="f">getPosts</span>(user.id))</div>
+<div class="line" id="l19">  .<span class="f">then</span>(posts => <span class="f">getComments</span>(posts[0].id))</div>
+<div class="line" id="l20">  .<span class="f">then</span>(data => <span class="f">console.log</span>(<span class="s">"Final:"</span>, data[0].text));</div>
+    </div>
+
+    <div id="ladder-panel">
+        <span class="title">Ladder</span>
+        <div id="n1" class="node">getUser(1)</div>
+        <div id="i1" class="link"></div>
+        <div id="n2" class="node">.then(getPosts)</div>
+        <div id="i2" class="link"></div>
+        <div id="n3" class="node">.then(getComments)</div>
+        <div id="i3" class="link"></div>
+        <div id="n4" class="node">Final Output</div>
+    </div>
+
+    <div id="internals-panel">
+        <div class="sec">
+            <span class="title">Call Stack <span class="sublabel">(synchronous, LIFO)</span></span>
+            <div id="stack"></div>
+        </div>
+        <div class="sec">
+            <span class="title">Web APIs <span class="sublabel">(timers in flight)</span></span>
+            <div id="apis"></div>
+        </div>
+        <div class="sec">
+            <span class="title">Macrotask / Callback Queue <span class="sublabel">(setTimeout callbacks, FIFO)</span></span>
+            <div id="macro"></div>
+        </div>
+        <div class="sec">
+            <span class="title">Microtask Queue <span class="sublabel">(.then continuations — always drained before next macrotask)</span></span>
+            <div id="micro"></div>
+        </div>
+        <div id="terminal">
+            <span class="title" style="color: #fff">Terminal</span>
+            <div id="term-content"></div>
+        </div>
+    </div>
+</main>
+
+<script src = "Promise_Ladder_Then_Chain_Visualizer.min.js"></script>
+
+</body>
+</html>
