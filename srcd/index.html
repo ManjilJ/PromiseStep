@@ -54,21 +54,38 @@
 
         main { display: flex; flex: 1; overflow: hidden; }
 
-        /* Wide Code Panel */
         #code-panel {
             flex: 2.3;
-            padding: 25px;
+            padding: 0;
             background: #090c10;
             overflow-y: auto;
             border-right: 1px solid var(--border);
             font-size: 13.5px;
             line-height: 1.5;
+            display: flex;
+        }
+
+        .line-numbers {
+            background: #161b22;
+            color: var(--comment);
+            padding: 25px 12px 25px 15px;
+            text-align: right;
+            border-right: 1px solid var(--border);
+            user-select: none;
+            flex-shrink: 0;
+            font-size: 13.5px;
+            line-height: 1.5;
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 25px 25px;
+            overflow: hidden;
         }
 
         .line { display: block; border-left: 4px solid transparent; padding-left: 15px; white-space: pre; }
         .line.active { background: rgba(88, 166, 255, 0.1); border-left-color: var(--accent); }
 
-        /* Narrow Ladder Panel */
         #ladder-panel {
             flex: 0.5;
             display: flex;
@@ -96,7 +113,6 @@
         .link { width: 3px; height: 18px; background: var(--border); }
         .link.active { background: var(--success); }
 
-        /* Internals Panel */
         #internals-panel { flex: 1.4; display: flex; flex-direction: column; }
         .sec { flex: 1; padding: 10px 12px; border-bottom: 1px solid var(--border); overflow-y: auto; }
         .title { font-size: 10px; font-weight: bold; color: var(--comment); text-transform: uppercase; margin-bottom: 6px; display: block; }
@@ -113,7 +129,6 @@
 
         @keyframes slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* Syntax Colors */
         .k { color: var(--keyword); } .f { color: var(--func); } .s { color: var(--str); } .c { color: var(--comment); }
 
         #step-msg {
@@ -129,7 +144,7 @@
 <body>
 
 <header>
-    <div><strong>JS Engine Deep-Dive: Callstack, Macrotasks &amp; Microtasks</strong></div>
+    <div><strong>JS Engine Deep-Dive: Call Stack, Macrotasks & Microtasks</strong></div>
     <div style="display: flex; gap: 10px;">
         <button class="btn" id="nextBtn" onclick="nextStep()">Next Step</button>
         <button class="btn btn-primary" id="autoBtn" onclick="autoRun()">Auto-Pilot</button>
@@ -142,26 +157,26 @@
 
 <main>
     <div id="code-panel">
+        <div class="line-numbers">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>
+        </div>
+        <div class="code-content">
 <div class="line" id="l1"><span class="k">const</span> <span class="f">getUser</span> = id => <span class="k">new</span> Promise(resolve => {</div>
 <div class="line" id="l2">  <span class="k">const</span> greeting = <span class="s">"Welcome back,"</span>;</div>
 <div class="line" id="l3">  <span class="k">const</span> <span class="f">fetchUserName</span> = cb => <span class="f">setTimeout</span>(() => cb(<span class="s">"Alice"</span>), 1000);</div>
-<div class="line" id="l4"></div>
-<div class="line" id="l5">  <span class="f">fetchUserName</span>(name => {</div>
-<div class="line" id="l6">    <span class="f">console.log</span>(greeting + <span class="s">" "</span> + name); <span class="c">// Closure Recitation</span></div>
-<div class="line" id="l7">  });</div>
-<div class="line" id="l8"></div>
-<div class="line" id="l9">  <span class="f">console.log</span>(<span class="s">"Request sent, waiting for response..."</span>);</div>
-<div class="line" id="l10">  <span class="f">setTimeout</span>(() => resolve({id, name: <span class="s">'Alice'</span>}), 1500);</div>
-<div class="line" id="l11">});</div>
-<div class="line" id="l12"></div>
-<div class="line" id="l13"><span class="k">const</span> <span class="f">getPosts</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{id: 101}]), 1000));</div>
-<div class="line" id="l14"><span class="k">const</span> <span class="f">getComments</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{text: <span class="s">'Comment A'</span>}]), 1000));</div>
-<div class="line" id="l15"></div>
-<div class="line" id="l16"><span class="c">// --- The Registration Phase ---</span></div>
-<div class="line" id="l17"><span class="f">getUser</span>(1)</div>
-<div class="line" id="l18">  .<span class="f">then</span>(user => <span class="f">getPosts</span>(user.id))</div>
-<div class="line" id="l19">  .<span class="f">then</span>(posts => <span class="f">getComments</span>(posts[0].id))</div>
-<div class="line" id="l20">  .<span class="f">then</span>(data => <span class="f">console.log</span>(<span class="s">"Final:"</span>, data[0].text));</div>
+<div class="line" id="l4">  <span class="f">fetchUserName</span>(name => {</div>
+<div class="line" id="l5">    <span class="f">console.log</span>(greeting + <span class="s">" "</span> + name); <span class="c">// Closure: captures 'greeting'</span></div>
+<div class="line" id="l6">  });</div>
+<div class="line" id="l7">  <span class="f">console.log</span>(<span class="s">"Request sent, waiting for response..."</span>);</div>
+<div class="line" id="l8">  <span class="f">setTimeout</span>(() => resolve({id, name: <span class="s">'Alice'</span>}), 1500);</div>
+<div class="line" id="l9">});</div>
+<div class="line" id="l10"><span class="k">const</span> <span class="f">getPosts</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{id: 101}]), 1000));</div>
+<div class="line" id="l11"><span class="k">const</span> <span class="f">getComments</span> = id => <span class="k">new</span> Promise(res => <span class="f">setTimeout</span>(() => res([{text: <span class="s">'Comment A'</span>}]), 1000));</div>
+<div class="line" id="l12"><span class="f">getUser</span>(1)</div>
+<div class="line" id="l13">  .<span class="f">then</span>(user => <span class="f">getPosts</span>(user.id))</div>
+<div class="line" id="l14">  .<span class="f">then</span>(posts => <span class="f">getComments</span>(posts[0].id))</div>
+<div class="line" id="l15">  .<span class="f">then</span>(data => <span class="f">console.log</span>(<span class="s">"Final:"</span>, data[0].text));</div>
+        </div>
     </div>
 
     <div id="ladder-panel">
@@ -185,11 +200,11 @@
             <div id="apis"></div>
         </div>
         <div class="sec">
-            <span class="title">Macrotask / Callback Queue <span class="sublabel">(setTimeout callbacks, FIFO)</span></span>
+            <span class="title">Macrotask Queue <span class="sublabel">(setTimeout callbacks, FIFO)</span></span>
             <div id="macro"></div>
         </div>
         <div class="sec">
-            <span class="title">Microtask Queue <span class="sublabel">(.then continuations — always drained before next macrotask)</span></span>
+            <span class="title">Microtask Queue <span class="sublabel">(.then continuations — always drained first)</span></span>
             <div id="micro"></div>
         </div>
         <div id="terminal">
@@ -199,7 +214,7 @@
     </div>
 </main>
 
-<script src = "Promise_Ladder_Then_Chain_Visualizer.min.js"></script>
+<script src = "Promise_Ladder_Then_Chain_Visualizer.js"></script>
 
 </body>
 </html>
